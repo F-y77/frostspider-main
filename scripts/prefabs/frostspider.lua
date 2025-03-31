@@ -82,6 +82,7 @@ local function OnDeath(inst)
             end
         end
     end
+end
 
 local function fn()
     local inst = CreateEntity()
@@ -107,7 +108,7 @@ local function fn()
     inst:AddTag("frostspider")
 
     inst.AnimState:SetBank("spider")
-    inst.AnimState:SetBuild("spider_build")
+    inst.AnimState:SetBuild("frostspider")
     inst.AnimState:PlayAnimation("idle")
 
     inst.entity:SetPristine()

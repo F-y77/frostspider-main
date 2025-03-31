@@ -1,7 +1,7 @@
 name = "冰霜蜘蛛"
-description = "添加一种新的蜘蛛敌人 - 冰霜蜘蛛，它们会对敌人造成冰冻效果。"
+description = "添加一种新的蜘蛛敌人 - 冰霜蜘蛛，它们会对敌人造成冰冻伤害，群体攻击十分难打，死后爆炸范围冰冻效果。"
 author = "凌"
-version = "1.1"
+version = "1.2"
 
 -- 兼容性
 dst_compatible = true
@@ -14,8 +14,8 @@ client_only_mod = false
 all_clients_require_mod = true
 
 -- 图标
-icon_atlas = "modicon.tex"
-icon = "modicon.xml"
+icon_atlas = "modicon.xml"
+icon = "modicon.tex"
 
 -- mod标签
 server_filter_tags = {
