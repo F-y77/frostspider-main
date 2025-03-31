@@ -1,12 +1,12 @@
 local assets = {
-    Asset("ANIM", "anim/ds_spider_basic.zip"),
-    Asset("ANIM", "anim/spider_build.zip"),
+    Asset("ANIM", "anim/frostspider.zip"),
 }
 
 local prefabs = {
     "monstermeat",
     "silk",
-    "ice"
+    "ice",
+    "icespike_fx_1"
 }
 
 local brain = require "brains/spiderbrain"
@@ -33,7 +33,7 @@ local function OnAttack(inst, target)
     if target and target:IsValid() and target.components.health and not target.components.health:IsDead() then
         -- 添加冰冻效果
         if target.components.freezable then
-            local freeze_power = TUNING.FROSTSPIDER_FREEZE_POWER or 3
+            local freeze_power = TUNING.FROSTSPIDER_FREEZE_POWER or 2
             target.components.freezable:AddColdness(freeze_power)  -- 使用配置的冰冻强度
             target.components.freezable:SpawnShatterFX()  -- 产生冰冻特效
         end
@@ -60,6 +60,28 @@ local function keeptargetfn(inst, target)
         and not target.components.health:IsDead()
         and not (inst.components.follower ~= nil and inst.components.follower.leader == target)
 end
+
+local function OnDeath(inst)
+    if TUNING.FROSTSPIDER_DEATH_FREEZE then
+        -- 播放冰冻爆炸效果
+        local fx = SpawnPrefab("icespike_fx_1") -- 或使用其他现有的冰冻效果
+        if fx then
+            fx.Transform:SetPosition(inst.Transform:GetWorldPosition())
+        end
+        
+        -- 冻结周围的生物
+        local freeze_range = TUNING.FROSTSPIDER_DEATH_FREEZE_RANGE or 3
+        local freeze_power = TUNING.FROSTSPIDER_FREEZE_POWER or 2
+        local x, y, z = inst.Transform:GetWorldPosition()
+        local ents = TheSim:FindEntities(x, y, z, freeze_range, {"_combat"}, {"INLIMBO", "frostspider", "wall", "structure"})
+        
+        for _, ent in ipairs(ents) do
+            if ent ~= inst and ent.components.freezable then
+                ent.components.freezable:AddColdness(freeze_power)
+                ent.components.freezable:SpawnShatterFX()
+            end
+        end
+    end
 
 local function fn()
     local inst = CreateEntity()
@@ -124,7 +146,7 @@ local function fn()
     inst.components.lootdropper:AddRandomLoot("monstermeat", 1)
     inst.components.lootdropper:AddRandomLoot("silk", 0.5)
     inst.components.lootdropper:AddRandomLoot("ice", 0.3)
-    inst.components.lootdropper.numrandomloot = 2
+    inst.components.lootdropper.numrandomloot = TUNING.FROSTSPIDER_MIN_LOOT or 2
 
     inst:AddComponent("inspectable")
     
@@ -194,6 +216,8 @@ local function fn()
             old_attack_fn(self)
         end
     end
+
+    inst:ListenForEvent("death", OnDeath)
 
     return inst
 end

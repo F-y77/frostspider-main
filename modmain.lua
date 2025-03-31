@@ -7,8 +7,7 @@ PrefabFiles = {
 
 -- 添加资源文件路径
 Assets = {
-    Asset("ANIM", "anim/ds_spider_basic.zip"),
-    Asset("ANIM", "anim/spider_build.zip"),
+    Asset("ANIM", "anim/frostspider.zip"),
 }
 
 -- 添加字符串表
@@ -47,4 +46,20 @@ local attack_period = GetModConfigData("frostspider_attack_period")
 if attack_period ~= nil then
     TUNING.FROSTSPIDER_ATTACK_PERIOD = attack_period
 end
+
+local min_loot = GetModConfigData("frostspider_min_loot")
+if min_loot ~= nil then
+    TUNING.FROSTSPIDER_MIN_LOOT = min_loot
+end
+
+local death_freeze = GetModConfigData("frostspider_death_freeze")
+if death_freeze ~= nil then
+    TUNING.FROSTSPIDER_DEATH_FREEZE = death_freeze
+end
+
+local death_freeze_range = GetModConfigData("frostspider_death_freeze_range")
+if death_freeze_range ~= nil then
+    TUNING.FROSTSPIDER_DEATH_FREEZE_RANGE = death_freeze_range
+end
+
 

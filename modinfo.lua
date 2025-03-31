@@ -1,7 +1,7 @@
 name = "冰霜蜘蛛"
 description = "添加一种新的蜘蛛敌人 - 冰霜蜘蛛，它们会对敌人造成冰冻效果。"
 author = "凌"
-version = "1.0.0"
+version = "1.1"
 
 -- 兼容性
 dst_compatible = true
@@ -34,7 +34,7 @@ configuration_options = {
             {description = "高 (150)", data = 150},
             {description = "很高 (200)", data = 200},
         },
-        default = 100,
+        default = 75,
     },
     {
         name = "frostspider_damage",
@@ -45,7 +45,7 @@ configuration_options = {
             {description = "高 (30)", data = 30},
             {description = "很高 (40)", data = 40},
         },
-        default = 20,
+        default = 15,
     },
     {
         name = "frostspider_freeze_power",
@@ -56,11 +56,11 @@ configuration_options = {
             {description = "强 (4)", data = 4},
             {description = "很强 (5)", data = 5},
         },
-        default = 3,
+        default = 2,
     },
     {
         name = "frostspider_target_dist",
-        label = "冰霜蜘蛛攻击距离",
+        label = "冰霜蜘蛛视野攻击距离",
         options = {
             {description = "近 (6)", data = 6},
             {description = "默认 (10)", data = 10},
@@ -79,5 +79,36 @@ configuration_options = {
             {description = "很快 (4)", data = 4},
         },
         default = 2,
-    }
+    },
+    {
+        name = "frostspider_min_loot",
+        label = "冰霜蜘蛛最少掉落物数量",
+        options = {
+            {description = "1个", data = 1},
+            {description = "2个", data = 2},
+            {description = "3个", data = 3},
+            {description = "4个", data = 4},
+        },
+        default = 2,
+    },
+    {
+        name = "frostspider_death_freeze",
+        label = "死亡冰冻效果",
+        options = {
+            {description = "开启", data = true},
+            {description = "关闭", data = false},
+        },
+        default = true,
+    },
+    {
+        name = "frostspider_death_freeze_range",
+        label = "死亡冰冻范围",
+        options = {
+            {description = "小 (2)", data = 2},
+            {description = "中 (3)", data = 3},
+            {description = "大 (4)", data = 4},
+            {description = "很大 (5)", data = 5},
+        },
+        default = 2,
+    },
 } 
