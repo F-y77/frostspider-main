@@ -1,7 +1,7 @@
 name = "冰霜蜘蛛"
 description = "添加一种新的蜘蛛敌人 - 冰霜蜘蛛，它们会对敌人造成冰冻伤害，群体攻击十分难打，死后爆炸范围冰冻效果。"
 author = "凌"
-version = "1.2"
+version = "1.25"
 
 -- 兼容性
 dst_compatible = true

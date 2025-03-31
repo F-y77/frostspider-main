@@ -174,42 +174,36 @@ local function fn()
     inst:SetStateGraph("SGspider")
     inst:SetBrain(brain)
 
-    -- 修复声音处理
+    -- 修改声音处理部分
+    inst.sounds = {
+        attack = "dontstarve/creatures/spider/attack",
+        attack_grunt = "dontstarve/creatures/spider/attack_grunt",
+        death = "dontstarve/creatures/spider/die",
+        hit = "dontstarve/creatures/spider/hit_response",
+        hit_response = "dontstarve/creatures/spider/hit_response",
+        jump = "dontstarve/creatures/spider/attack_grunt",
+        walk = "dontstarve/creatures/spider/walk",
+        eat = "dontstarve/creatures/spider/eat",
+        scream = "dontstarve/creatures/spider/scream",
+        taunt = "dontstarve/creatures/spider/taunt",
+        sleep = "dontstarve/creatures/spider/sleep",
+        wake = "dontstarve/creatures/spider/wake"
+    }
+
+    -- 修改声音播放函数
     inst.SoundPath = function(inst, event)
-        if event == "attack" then
-            return "dontstarve/creatures/spider/attack"
-        elseif event == "attack_grunt" then
-            return "dontstarve/creatures/spider/attack_grunt"
-        elseif event == "death" then
-            return "dontstarve/creatures/spider/die"
-        elseif event == "hit" then
-            return "dontstarve/creatures/spider/hit_response"
-        elseif event == "hit_response" then
-            return "dontstarve/creatures/spider/hit_response"
-        elseif event == "jump" then
-            return "dontstarve/creatures/spider/attack_grunt"
-        elseif event == "walk" then
-            return "dontstarve/creatures/spider/walk"
-        elseif event == "eat" then
-            return "dontstarve/creatures/spider/eat"
-        elseif event == "scream" then
-            return "dontstarve/creatures/spider/scream"
-        elseif event == "taunt" then
-            return "dontstarve/creatures/spider/taunt"
-        elseif event == "sleep" then
-            return "dontstarve/creatures/spider/sleep"
-        elseif event == "wake" then
-            return "dontstarve/creatures/spider/wake"
+        if event:find("spider_") then
+            event = event:gsub("spider_", "")
         end
-        return "dontstarve/creatures/spider/spider_" .. event
+        return inst.sounds[event] or "dontstarve/creatures/spider/" .. event
     end
 
-    -- 添加声音事件监听
+    -- 修改声音事件监听
     inst:ListenForEvent("attacked", function(inst)
         inst.SoundEmitter:PlaySound(inst:SoundPath("hit_response"))
     end)
 
-    -- 确保攻击声音正确播放
+    -- 修改攻击声音播放
     local old_attack_fn = inst.components.combat.StartAttack
     inst.components.combat.StartAttack = function(self)
         inst.SoundEmitter:PlaySound(inst:SoundPath("attack"))
@@ -218,7 +212,11 @@ local function fn()
         end
     end
 
-    inst:ListenForEvent("death", OnDeath)
+    -- 修改死亡声音播放
+    inst:ListenForEvent("death", function(inst)
+        inst.SoundEmitter:PlaySound(inst:SoundPath("death"))
+        OnDeath(inst)
+    end)
 
     return inst
 end
