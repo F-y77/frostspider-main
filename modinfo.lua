@@ -1,7 +1,7 @@
 name = "季节性蜘蛛"
-description = "添加一种新的蜘蛛敌人 - 冰霜蜘蛛，它们会对敌人造成冰冻伤害，群体攻击十分难打，死后爆炸范围冰冻效果；所有的普通蜘蛛会在冬天自动变成冰霜蜘蛛。做一个生物好难，我准备先从蜘蛛这种简单的开始，先弄一个季节性蜘蛛，接下来是春天的潮湿蜘蛛和夏天的火爆蜘蛛，秋天是普通蜘蛛，敬请期待。"
+description = "添加三种新的蜘蛛敌人 - 冰霜蜘蛛、潮湿蜘蛛和火爆蜘蛛。所有的普通蜘蛛会在冬天变成冰霜蜘蛛，春天变成潮湿蜘蛛，夏天变成火爆蜘蛛，秋天恢复普通形态。每种蜘蛛都有独特的攻击方式和死亡效果。"
 author = "凌"
-version = "1.4"
+version = "2.0"
 
 -- 兼容性
 dst_compatible = true
@@ -29,71 +29,67 @@ configuration_options = {
         name = "frostspider_health",
         label = "冰霜蜘蛛生命值",
         options = {
-            {description = "低 (75)", data = 75},
+            {description = "低 (80)", data = 80},
             {description = "默认 (100)", data = 100},
-            {description = "高 (150)", data = 150},
-            {description = "很高 (200)", data = 200},
+            {description = "高 (120)", data = 120},
+            {description = "很高 (150)", data = 150},
         },
-        default = 75,
+        default = 100,
     },
     {
         name = "frostspider_damage",
-        label = "冰霜蜘蛛攻击力",
+        label = "冰霜蜘蛛伤害",
         options = {
             {description = "低 (15)", data = 15},
             {description = "默认 (20)", data = 20},
-            {description = "高 (30)", data = 30},
-            {description = "很高 (40)", data = 40},
+            {description = "高 (25)", data = 25},
+            {description = "很高 (30)", data = 30},
+        },
+        default = 20,
+    },
+    {
+        name = "frostspider_freeze_power",
+        label = "冰霜蜘蛛冻结强度",
+        options = {
+            {description = "低 (1)", data = 1},
+            {description = "默认 (3)", data = 3},
+            {description = "高 (5)", data = 5},
+        },
+        default = 3,
+    },
+    {
+        name = "wetspider_health",
+        label = "潮湿蜘蛛生命值",
+        options = {
+            {description = "低 (70)", data = 70},
+            {description = "默认 (90)", data = 90},
+            {description = "高 (110)", data = 110},
+        },
+        default = 90,
+    },
+    {
+        name = "wetspider_damage",
+        label = "潮湿蜘蛛伤害",
+        options = {
+            {description = "低 (10)", data = 10},
+            {description = "默认 (15)", data = 15},
+            {description = "高 (20)", data = 20},
         },
         default = 15,
     },
     {
-        name = "frostspider_freeze_power",
-        label = "冰冻效果强度",
+        name = "wetspider_wet_power",
+        label = "潮湿蜘蛛湿度效果",
         options = {
-            {description = "弱 (2)", data = 2},
-            {description = "默认 (3)", data = 3},
-            {description = "强 (4)", data = 4},
-            {description = "很强 (5)", data = 5},
+            {description = "低 (20)", data = 20},
+            {description = "默认 (30)", data = 30},
+            {description = "高 (40)", data = 40},
         },
-        default = 2,
+        default = 30,
     },
     {
-        name = "frostspider_target_dist",
-        label = "冰霜蜘蛛视野攻击距离",
-        options = {
-            {description = "近 (6)", data = 6},
-            {description = "默认 (10)", data = 10},
-            {description = "远 (15)", data = 15},
-            {description = "很远 (20)", data = 20},
-        },
-        default = 10,
-    },
-    {
-        name = "frostspider_attack_period",
-        label = "冰霜蜘蛛攻击间隔",
-        options = {
-            {description = "慢 (1)", data = 1},
-            {description = "默认 (2)", data = 2},
-            {description = "快 (3)", data = 3},
-            {description = "很快 (4)", data = 4},
-        },
-        default = 2,
-    },
-    {
-        name = "frostspider_min_loot",
-        label = "冰霜蜘蛛最少掉落物数量",
-        options = {
-            {description = "1个", data = 1},
-            {description = "2个", data = 2},
-            {description = "3个", data = 3},
-            {description = "4个", data = 4},
-        },
-        default = 2,
-    },
-    {
-        name = "frostspider_death_freeze",
-        label = "死亡冰冻效果",
+        name = "wetspider_death_wet",
+        label = "潮湿蜘蛛死亡湿润效果",
         options = {
             {description = "开启", data = true},
             {description = "关闭", data = false},
@@ -101,14 +97,34 @@ configuration_options = {
         default = true,
     },
     {
-        name = "frostspider_death_freeze_range",
-        label = "死亡冰冻范围",
+        name = "hotspider_health",
+        label = "火爆蜘蛛生命值",
         options = {
-            {description = "小 (2)", data = 2},
-            {description = "中 (3)", data = 3},
-            {description = "大 (4)", data = 4},
-            {description = "很大 (5)", data = 5},
+            {description = "低 (100)", data = 100},
+            {description = "默认 (120)", data = 120},
+            {description = "高 (140)", data = 140},
+            {description = "很高 (160)", data = 160},
         },
-        default = 2,
+        default = 120,
+    },
+    {
+        name = "hotspider_damage",
+        label = "火爆蜘蛛伤害",
+        options = {
+            {description = "低 (20)", data = 20},
+            {description = "默认 (25)", data = 25},
+            {description = "高 (30)", data = 30},
+            {description = "很高 (35)", data = 35},
+        },
+        default = 25,
+    },
+    {
+        name = "hotspider_death_burn",
+        label = "火爆蜘蛛死亡燃烧效果",
+        options = {
+            {description = "开启", data = true},
+            {description = "关闭", data = false},
+        },
+        default = true,
     },
 } 
