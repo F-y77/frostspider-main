@@ -52,6 +52,11 @@ TUNING.HOTSPIDER_MIN_LOOT = 2
 TUNING.HOTSPIDER_DEATH_BURN = true
 TUNING.HOTSPIDER_DEATH_BURN_RANGE = 3
 
+-- 添加秋季普通蜘蛛的基础属性配置
+TUNING.AUTUMN_SPIDER_HEALTH_MULT = 1.2  -- 生命值倍率
+TUNING.AUTUMN_SPIDER_DAMAGE_MULT = 1.2  -- 伤害倍率
+TUNING.AUTUMN_SPIDER_SPEED_MULT = 1.1   -- 速度倍率
+
 -- 然后应用配置选项
 local health_config = GetModConfigData("frostspider_health")
 if health_config ~= nil then
@@ -120,6 +125,22 @@ if hotspider_damage ~= nil then
     TUNING.HOTSPIDER_DAMAGE = hotspider_damage
 end
 
+-- 应用秋季蜘蛛配置选项
+local autumn_spider_health_mult = GetModConfigData("autumn_spider_health_mult")
+if autumn_spider_health_mult ~= nil then
+    TUNING.AUTUMN_SPIDER_HEALTH_MULT = autumn_spider_health_mult
+end
+
+local autumn_spider_damage_mult = GetModConfigData("autumn_spider_damage_mult")
+if autumn_spider_damage_mult ~= nil then
+    TUNING.AUTUMN_SPIDER_DAMAGE_MULT = autumn_spider_damage_mult
+end
+
+local autumn_spider_speed_mult = GetModConfigData("autumn_spider_speed_mult")
+if autumn_spider_speed_mult ~= nil then
+    TUNING.AUTUMN_SPIDER_SPEED_MULT = autumn_spider_speed_mult
+end
+
 -- 添加冬季蜘蛛变形功能
 local function BecomeFrostSpider(inst)
     inst.task = nil
@@ -136,6 +157,8 @@ local function BecomeFrostSpider(inst)
     inst.AnimState:SetBuild("frostspider")
     inst.components.freezable:SetResistance(4)
     inst:AddTag("frostspider")
+    inst:RemoveTag("wetspider")
+    inst:RemoveTag("hotspider")
     
     -- 添加冰冻攻击效果
     inst.components.combat.onhitotherfn = function(inst, target)
@@ -143,7 +166,9 @@ local function BecomeFrostSpider(inst)
             if target.components.freezable then
                 local freeze_power = TUNING.FROSTSPIDER_FREEZE_POWER
                 target.components.freezable:AddColdness(freeze_power)
-                target.components.freezable:SpawnShatterFX()
+            end
+            if target.components.temperature then
+                target.components.temperature:DoDelta(-2)  -- 降低目标温度
             end
         end
     end
@@ -151,7 +176,7 @@ local function BecomeFrostSpider(inst)
     -- 修改掉落物
     inst.components.lootdropper:SetLoot(nil)
     inst.components.lootdropper:AddRandomLoot("monstermeat", 1)
-    inst.components.lootdropper:AddRandomLoot("silk", 0.5)
+    inst.components.lootdropper:AddRandomLoot("silk", 0.7)
     inst.components.lootdropper:AddRandomLoot("ice", 0.3)
     inst.components.lootdropper.numrandomloot = TUNING.FROSTSPIDER_MIN_LOOT
     
@@ -160,22 +185,24 @@ local function BecomeFrostSpider(inst)
         inst._old_ondeath = inst.components.health.ondeath
         inst.components.health.ondeath = function(inst)
             if TUNING.FROSTSPIDER_DEATH_FREEZE then
-                -- 播放冰冻爆炸效果
+                -- 播放冰冻效果
                 local fx = SpawnPrefab("icespike_fx_1")
                 if fx then
                     fx.Transform:SetPosition(inst.Transform:GetWorldPosition())
                 end
                 
-                -- 冻结周围的生物
-                local freeze_range = TUNING.FROSTSPIDER_DEATH_FREEZE_RANGE
-                local freeze_power = TUNING.FROSTSPIDER_FREEZE_POWER
+                -- 冰冻周围的生物
+                local freeze_range = TUNING.FROSTSPIDER_DEATH_FREEZE_RANGE or 3
+                local freeze_power = TUNING.FROSTSPIDER_FREEZE_POWER or 3
                 local x, y, z = inst.Transform:GetWorldPosition()
                 local ents = TheSim:FindEntities(x, y, z, freeze_range, {"_combat"}, {"INLIMBO", "frostspider", "wall", "structure"})
                 
                 for _, ent in ipairs(ents) do
-                    if ent ~= inst and ent.components.freezable then
+                    if ent ~= inst and ent.components.freezable and not ent.components.freezable:IsFrozen() then
                         ent.components.freezable:AddColdness(freeze_power)
-                        ent.components.freezable:SpawnShatterFX()
+                    end
+                    if ent.components.temperature then
+                        ent.components.temperature:DoDelta(-5)
                     end
                 end
             end
@@ -192,12 +219,14 @@ local function BecomeNormalSpider(inst)
         return
     end
     
-    -- 恢复原始属性
+    -- 恢复原始外观
     inst.AnimState:SetBuild("spider_build")
     inst.components.freezable:SetResistance(1)
     inst:RemoveTag("frostspider")
+    inst:RemoveTag("wetspider")
+    inst:RemoveTag("hotspider")
     
-    -- 移除冰冻攻击效果
+    -- 移除特殊攻击效果
     inst.components.combat.onhitotherfn = nil
     
     -- 恢复原始掉落物
@@ -206,12 +235,30 @@ local function BecomeNormalSpider(inst)
     inst.components.lootdropper:AddRandomLoot("silk", 0.5)
     inst.components.lootdropper.numrandomloot = 1
     
-    -- 恢复原始生命值和攻击力
-    inst.components.health:SetMaxHealth(TUNING.SPIDER_HEALTH)
-    inst.components.combat:SetDefaultDamage(TUNING.SPIDER_DAMAGE)
-    inst.components.combat:SetAttackPeriod(TUNING.SPIDER_ATTACK_PERIOD)
+    -- 秋季增强版普通蜘蛛
+    if TheWorld.state.season == "autumn" then
+        -- 增强生命值
+        local base_health = TUNING.SPIDER_HEALTH
+        inst.components.health:SetMaxHealth(base_health * TUNING.AUTUMN_SPIDER_HEALTH_MULT)
+        
+        -- 增强攻击力
+        local base_damage = TUNING.SPIDER_DAMAGE
+        inst.components.combat:SetDefaultDamage(base_damage * TUNING.AUTUMN_SPIDER_DAMAGE_MULT)
+        
+        -- 增强移动速度
+        local base_speed = TUNING.SPIDER_WALK_SPEED
+        inst.components.locomotor.walkspeed = base_speed * TUNING.AUTUMN_SPIDER_SPEED_MULT
+        inst.components.locomotor.runspeed = TUNING.SPIDER_RUN_SPEED * TUNING.AUTUMN_SPIDER_SPEED_MULT
+    else
+        -- 恢复原始生命值和攻击力
+        inst.components.health:SetMaxHealth(TUNING.SPIDER_HEALTH)
+        inst.components.combat:SetDefaultDamage(TUNING.SPIDER_DAMAGE)
+        inst.components.combat:SetAttackPeriod(TUNING.SPIDER_ATTACK_PERIOD)
+        inst.components.locomotor.walkspeed = TUNING.SPIDER_WALK_SPEED
+        inst.components.locomotor.runspeed = TUNING.SPIDER_RUN_SPEED
+    end
     
-    -- 移除死亡冰冻效果
+    -- 移除死亡特殊效果
     if inst._old_ondeath then
         inst.components.health.ondeath = inst._old_ondeath
         inst._old_ondeath = nil
@@ -250,7 +297,7 @@ local function BecomeWetSpider(inst)
     inst.components.lootdropper:SetLoot(nil)
     inst.components.lootdropper:AddRandomLoot("monstermeat", 1)
     inst.components.lootdropper:AddRandomLoot("silk", 0.7)
-    inst.components.lootdropper:AddRandomLoot("wetgoop", 0.3)
+    inst.components.lootdropper:AddRandomLoot("waterballoon", 0.3)
     inst.components.lootdropper.numrandomloot = TUNING.WETSPIDER_MIN_LOOT
     
     -- 添加死亡潮湿效果

@@ -5,7 +5,7 @@ local assets = {
 local prefabs = {
     "monstermeat",
     "silk",
-    "wetgoop",
+    "waterballoon",
     "splash_ocean"
 }
 

@@ -1,7 +1,21 @@
-name = "季节性蜘蛛"
-description = "添加三种新的蜘蛛敌人 - 冰霜蜘蛛、潮湿蜘蛛和火爆蜘蛛。所有的普通蜘蛛会在冬天变成冰霜蜘蛛，春天变成潮湿蜘蛛，夏天变成火爆蜘蛛，秋天恢复普通形态。每种蜘蛛都有独特的攻击方式和死亡效果。"
+name = "󰀗季节性蜘蛛󰀗"
+description = [[
+
+󰀗添加三种新的蜘蛛敌人 - 冰霜蜘蛛、潮湿蜘蛛和火爆蜘蛛。
+
+󰀗所有的普通蜘蛛会在冬天变成冰霜蜘蛛，春天变成潮湿蜘蛛，夏天变成火爆蜘蛛，秋天则保持普通形态但属性增强。
+
+󰀗每种蜘蛛都有独特的攻击方式和死亡效果。
+
+󰀗韦伯可以驯服所有的蜘蛛并为你作战，攻击BUFF转移到敌人身上。
+
+󰀗特别提醒：小心夏天的火爆蜘蛛把家烧了，春天的潮湿蜘蛛让你一直掉San，冬天的冰霜蜘蛛两个强控，秋天蜘蛛进行了加强。
+
+󰀗如果想要永远不随季节改变的模组蜘蛛，可以打开控制台进行刷新。"
+
+]]
 author = "凌"
-version = "2.0"
+version = "2.2"
 
 -- 兼容性
 dst_compatible = true
@@ -126,5 +140,37 @@ configuration_options = {
             {description = "关闭", data = false},
         },
         default = true,
+    },
+    {
+        name = "autumn_spider_health_mult",
+        label = "秋季蜘蛛生命值倍率",
+        options = {
+            {description = "无增强 (1.0)", data = 1.0},
+            {description = "轻微增强 (1.1)", data = 1.1},
+            {description = "中等增强 (1.2)", data = 1.2},
+            {description = "显著增强 (1.3)", data = 1.3},
+        },
+        default = 1.2,
+    },
+    {
+        name = "autumn_spider_damage_mult",
+        label = "秋季蜘蛛伤害倍率",
+        options = {
+            {description = "无增强 (1.0)", data = 1.0},
+            {description = "轻微增强 (1.1)", data = 1.1},
+            {description = "中等增强 (1.2)", data = 1.2},
+            {description = "显著增强 (1.3)", data = 1.3},
+        },
+        default = 1.2,
+    },
+    {
+        name = "autumn_spider_speed_mult",
+        label = "秋季蜘蛛速度倍率",
+        options = {
+            {description = "无增强 (1.0)", data = 1.0},
+            {description = "轻微增强 (1.1)", data = 1.1},
+            {description = "中等增强 (1.2)", data = 1.2},
+        },
+        default = 1.1,
     },
 } 
