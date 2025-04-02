@@ -428,6 +428,11 @@ local function BecomeHotSpider(inst)
 end
 
 local function OnSeasonChange(inst)
+    -- 如果是永久形态，不随季节变化
+    --if inst:HasTag("permanent_form") then
+    --    return
+    --end
+    
     if inst.task ~= nil then
         inst.task:Cancel()
         inst.task = nil
@@ -455,6 +460,11 @@ local function OnSeasonChange(inst)
 end
 
 local function OnWake(inst)
+    -- 如果是永久形态，不随季节变化
+    --if inst:HasTag("permanent_form") then
+    --    return
+    --end
+    
     inst:WatchWorldState("season", OnSeasonChange)
     if inst.task ~= nil then
         inst.task:Cancel()
@@ -490,6 +500,15 @@ local function OnSleep(inst)
     end
 end
 
+-- 修改蜘蛛的喂食逻辑
+local function FeedSpider(inst, item, giver)
+    if item and item:HasComponent("seasonswitcherdoodle") then
+        item.components.seasonswitcherdoodle:Transform(inst, giver)
+        return true
+    end
+    return false
+end
+
 -- 修改普通蜘蛛
 AddPrefabPostInit("spider", function(inst)
     if not TheWorld.ismastersim then
@@ -500,7 +519,22 @@ AddPrefabPostInit("spider", function(inst)
     inst.OnEntityWake = OnWake
     inst.OnEntitySleep = OnSleep
     
+    -- 添加可被喂食的功能
+    if not inst.components.trader then
+        inst:AddComponent("trader")
+        inst.components.trader.acceptnontradable = true
+        inst.components.trader:SetAcceptTest(function(inst, item)
+            return item:HasTag("switcherdoodle")
+        end)
+        inst.components.trader.onaccept = FeedSpider
+    end
+    
     -- 初始检查
+    -- 如果已经是永久形态，不做任何改变
+    --if inst:HasTag("permanent_form") then
+    --    return
+    --end
+    
     local current_season = TheWorld.state.season
     
     if current_season == "winter" then
@@ -512,6 +546,47 @@ AddPrefabPostInit("spider", function(inst)
     end
     -- 秋天保持普通形态，不需要特殊处理
 end)
+
+-- 同样修改其他类型的蜘蛛
+local spider_types = {"spider_warrior", "spider_dropper", "spider_hider", "spider_spitter", "spider_moon", "spider_healer"}
+for _, spider_type in ipairs(spider_types) do
+    AddPrefabPostInit(spider_type, function(inst)
+        if not TheWorld.ismastersim then
+            return
+        end
+        
+        -- 添加季节变化监听
+        inst.OnEntityWake = OnWake
+        inst.OnEntitySleep = OnSleep
+        
+        -- 添加可被喂食的功能
+        if not inst.components.trader then
+            inst:AddComponent("trader")
+            inst.components.trader.acceptnontradable = true
+            inst.components.trader:SetAcceptTest(function(inst, item)
+                return item:HasTag("switcherdoodle")
+            end)
+            inst.components.trader.onaccept = FeedSpider
+        end
+        
+        -- 初始检查
+        -- 如果已经是永久形态，不做任何改变
+        --if inst:HasTag("permanent_form") then
+        --    return
+        --end
+        
+        local current_season = TheWorld.state.season
+        
+        if current_season == "winter" then
+            BecomeFrostSpider(inst)
+        elseif current_season == "spring" then
+            BecomeWetSpider(inst)
+        elseif current_season == "summer" then
+            BecomeHotSpider(inst)
+        end
+        -- 秋天保持普通形态，不需要特殊处理
+    end)
+end
 
 -- 修改变身涂鸦的制作配方
 AddRecipe2(
@@ -822,27 +897,6 @@ local function AddEdibleComponent(inst, switcherdoodle_type)
         inst:AddComponent("perishable")
         inst.components.perishable:SetPerishTime(TUNING.PERISH_SLOW)
         inst.components.perishable:StartPerishing()
-    end
-    
-    -- 添加可投掷组件
-    if not inst.components.complexprojectile then
-        inst:AddComponent("complexprojectile")
-        inst.components.complexprojectile:SetHorizontalSpeed(15)
-        inst.components.complexprojectile:SetGravity(-35)
-        inst.components.complexprojectile:SetLaunchOffset(Vector3(0, 0.5, 0))
-        inst.components.complexprojectile:SetOnLaunch(function(inst)
-            inst.AnimState:PlayAnimation("spin_loop", true)
-            inst.components.inventoryitem.pushlandedevents = false
-        end)
-        inst.components.complexprojectile:SetOnHit(function(inst, attacker, target)
-            if target and target:HasTag("spider") and not target:HasTag("spiderqueen") then
-                OnEatSwitcherdoodle(inst, target, switcherdoodle_type)
-                inst:Remove()
-            else
-                inst.Physics:Stop()
-                inst.components.inventoryitem:OnDropped(true)
-            end
-        end)
     end
 end
 
