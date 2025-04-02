@@ -915,4 +915,30 @@ AddPrefabPostInit("hot_switcherdoodle", function(inst)
     AddEdibleComponent(inst, "hot")
 end)
 
+-- 修复变身涂鸦放置崩溃问题
+local function FixSwitcherdoodleDrop(inst)
+    if not TheWorld.ismastersim then
+        return
+    end
+    
+    if inst.components.inventoryitem then
+        local old_OnDropped = inst.components.inventoryitem.OnDropped
+        inst.components.inventoryitem.OnDropped = function(inst, ...)
+            -- 确保物品可以安全放置在地上
+            if inst.Physics then
+                inst.Physics:SetActive(true)
+            end
+            
+            if old_OnDropped then
+                return old_OnDropped(inst, ...)
+            end
+        end
+    end
+end
+
+-- 应用修复到所有变身涂鸦
+AddPrefabPostInit("frost_switcherdoodle", FixSwitcherdoodleDrop)
+AddPrefabPostInit("wet_switcherdoodle", FixSwitcherdoodleDrop)
+AddPrefabPostInit("hot_switcherdoodle", FixSwitcherdoodleDrop)
+
 

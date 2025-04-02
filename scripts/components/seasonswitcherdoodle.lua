@@ -3,20 +3,22 @@ local SeasonSwitcherdoodle = Class(function(self, inst)
     self.target_type = nil
 end)
 
-function SeasonSwitcherdoodle:SetTargetType(target_type)
-    self.target_type = target_type
+function SeasonSwitcherdoodle:SetTargetType(type)
+    self.target_type = type
 end
 
 function SeasonSwitcherdoodle:CanTransform(spider)
-    -- 检查是否可以变身
-    if not spider:HasTag("spider") or spider:HasTag("spiderqueen") then
+    -- 检查是否是蜘蛛
+    if not spider:HasTag("spider") then
         return false
     end
     
-    -- 如果已经是目标类型，则不需要变身
-    if (self.target_type == "frost" and spider:HasTag("frostspider")) or
-       (self.target_type == "wet" and spider:HasTag("wetspider")) or
-       (self.target_type == "hot" and spider:HasTag("hotspider")) then
+    -- 检查是否已经是目标类型
+    if self.target_type == "frost" and spider:HasTag("frostspider") then
+        return false
+    elseif self.target_type == "wet" and spider:HasTag("wetspider") then
+        return false
+    elseif self.target_type == "hot" and spider:HasTag("hotspider") then
         return false
     end
     
@@ -48,36 +50,56 @@ function SeasonSwitcherdoodle:Transform(spider, giver)
             spider.components.health:SetPercent(1)
         end
         
-        -- 设置攻击属性
+        -- 更新战斗属性
         if spider.components.combat then
             spider.components.combat:SetDefaultDamage(TUNING.FROSTSPIDER_DAMAGE)
             spider.components.combat:SetAttackPeriod(TUNING.FROSTSPIDER_ATTACK_PERIOD)
-            
-            -- 添加冰冻攻击效果
-            spider.components.combat.onhitotherfn = function(inst, target)
-                if target and target:IsValid() and target.components.health and not target.components.health:IsDead() then
-                    if target.components.freezable then
-                        local freeze_power = TUNING.FROSTSPIDER_FREEZE_POWER
-                        target.components.freezable:AddColdness(freeze_power)
-                    end
-                    if target.components.temperature then
-                        target.components.temperature:DoDelta(-2)  -- 降低目标温度
-                    end
+        end
+        
+        -- 添加冰冻效果
+        if spider.components.combat and not spider.components.combat.onhitotherfn_old then
+            spider.components.combat.onhitotherfn_old = spider.components.combat.onhitotherfn
+            spider.components.combat.onhitotherfn = function(inst, other, damage)
+                if other and other.components.freezable then
+                    other.components.freezable:AddColdness(1)
+                    other.components.freezable:SpawnShatterFX()
+                end
+                if spider.components.combat.onhitotherfn_old then
+                    return spider.components.combat.onhitotherfn_old(inst, other, damage)
+                end
+            end
+        end
+        
+        -- 添加死亡效果
+        if spider.components.health and not spider.components.health.ondeath_old then
+            spider.components.health.ondeath_old = spider.components.health.ondeath
+            spider.components.health.ondeath = function(inst, data)
+                local fx = SpawnPrefab("shatter")
+                if fx then
+                    fx.Transform:SetPosition(spider.Transform:GetWorldPosition())
+                end
+                if spider.components.health.ondeath_old then
+                    return spider.components.health.ondeath_old(inst, data)
                 end
             end
         end
         
         -- 添加冰冻抗性
         if spider.components.freezable then
-            spider.components.freezable:SetResistance(8)
+            spider.components.freezable:SetResistance(4)
         end
         
-        -- 播放变身特效
-        local fx = SpawnPrefab("icespike_fx_1")
+        -- 添加温度调节
+        if spider.components.temperature then
+            spider.components.temperature.mintemp = -20
+            spider.components.temperature.maxtemp = 10
+        end
+        
+        -- 特效
+        local fx = SpawnPrefab("shatter")
         if fx then
             fx.Transform:SetPosition(spider.Transform:GetWorldPosition())
         end
-        
     elseif self.target_type == "wet" then
         -- 变为潮湿蜘蛛
         spider.AnimState:SetBuild("wetspider")
@@ -89,31 +111,49 @@ function SeasonSwitcherdoodle:Transform(spider, giver)
             spider.components.health:SetPercent(1)
         end
         
-        -- 设置攻击属性
+        -- 更新战斗属性
         if spider.components.combat then
             spider.components.combat:SetDefaultDamage(TUNING.WETSPIDER_DAMAGE)
             spider.components.combat:SetAttackPeriod(TUNING.WETSPIDER_ATTACK_PERIOD)
-            
-            -- 添加潮湿攻击效果
-            spider.components.combat.onhitotherfn = function(inst, target)
-                if target and target:IsValid() and target.components.health and not target.components.health:IsDead() then
-                    if target.components.moisture then
-                        local wet_power = TUNING.WETSPIDER_WET_POWER or 20
-                        target.components.moisture:DoDelta(wet_power)
-                    end
-                    if target.components.sanity then
-                        target.components.sanity:DoDelta(-TUNING.WETSPIDER_SANITY_DRAIN)  -- 降低目标理智
-                    end
+        end
+        
+        -- 添加潮湿效果
+        if spider.components.combat and not spider.components.combat.onhitotherfn_old then
+            spider.components.combat.onhitotherfn_old = spider.components.combat.onhitotherfn
+            spider.components.combat.onhitotherfn = function(inst, other, damage)
+                if other and other.components.moisture then
+                    other.components.moisture:DoDelta(10)
+                end
+                if spider.components.combat.onhitotherfn_old then
+                    return spider.components.combat.onhitotherfn_old(inst, other, damage)
                 end
             end
         end
         
-        -- 播放变身特效
-        local fx = SpawnPrefab("splash_ocean")
+        -- 添加死亡效果
+        if spider.components.health and not spider.components.health.ondeath_old then
+            spider.components.health.ondeath_old = spider.components.health.ondeath
+            spider.components.health.ondeath = function(inst, data)
+                local fx = SpawnPrefab("splash")
+                if fx then
+                    fx.Transform:SetPosition(spider.Transform:GetWorldPosition())
+                end
+                if spider.components.health.ondeath_old then
+                    return spider.components.health.ondeath_old(inst, data)
+                end
+            end
+        end
+        
+        -- 添加潮湿抗性
+        if spider.components.moisture then
+            spider.components.moisture.waterproofness = 1
+        end
+        
+        -- 特效
+        local fx = SpawnPrefab("splash")
         if fx then
             fx.Transform:SetPosition(spider.Transform:GetWorldPosition())
         end
-        
     elseif self.target_type == "hot" then
         -- 变为火爆蜘蛛
         spider.AnimState:SetBuild("hotspider")
@@ -125,33 +165,51 @@ function SeasonSwitcherdoodle:Transform(spider, giver)
             spider.components.health:SetPercent(1)
         end
         
-        -- 设置攻击属性
+        -- 更新战斗属性
         if spider.components.combat then
             spider.components.combat:SetDefaultDamage(TUNING.HOTSPIDER_DAMAGE)
             spider.components.combat:SetAttackPeriod(TUNING.HOTSPIDER_ATTACK_PERIOD)
-            
-            -- 添加燃烧攻击效果
-            spider.components.combat.onhitotherfn = function(inst, target)
-                if target and target:IsValid() and target.components.health and not target.components.health:IsDead() then
-                    if target.components.burnable and not target.components.burnable:IsBurning() then
-                        local burn_power = TUNING.HOTSPIDER_BURN_POWER or 3
-                        if math.random() < 0.3 then  -- 30%几率点燃目标
-                            target.components.burnable:Ignite()
-                        end
-                    end
-                    if target.components.temperature then
-                        target.components.temperature:DoDelta(2)  -- 增加目标温度
-                    end
+        end
+        
+        -- 添加燃烧效果
+        if spider.components.combat and not spider.components.combat.onhitotherfn_old then
+            spider.components.combat.onhitotherfn_old = spider.components.combat.onhitotherfn
+            spider.components.combat.onhitotherfn = function(inst, other, damage)
+                if other and other.components.burnable and not other.components.burnable:IsBurning() then
+                    other.components.burnable:Ignite()
+                end
+                if spider.components.combat.onhitotherfn_old then
+                    return spider.components.combat.onhitotherfn_old(inst, other, damage)
                 end
             end
         end
         
-        -- 添加冰冻抗性
-        if spider.components.freezable then
-            spider.components.freezable:SetResistance(8)
+        -- 添加死亡效果
+        if spider.components.health and not spider.components.health.ondeath_old then
+            spider.components.health.ondeath_old = spider.components.health.ondeath
+            spider.components.health.ondeath = function(inst, data)
+                local fx = SpawnPrefab("explode_small")
+                if fx then
+                    fx.Transform:SetPosition(spider.Transform:GetWorldPosition())
+                end
+                if spider.components.health.ondeath_old then
+                    return spider.components.health.ondeath_old(inst, data)
+                end
+            end
         end
         
-        -- 播放变身特效
+        -- 添加火焰抗性
+        if spider.components.health then
+            spider.components.health.fire_damage_scale = 0
+        end
+        
+        -- 添加温度调节
+        if spider.components.temperature then
+            spider.components.temperature.mintemp = 10
+            spider.components.temperature.maxtemp = 90
+        end
+        
+        -- 特效
         local fx = SpawnPrefab("explode_small")
         if fx then
             fx.Transform:SetPosition(spider.Transform:GetWorldPosition())
