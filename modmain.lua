@@ -500,356 +500,201 @@ local function OnSleep(inst)
     end
 end
 
--- 修改蜘蛛的喂食逻辑
-local function FeedSpider(inst, item, giver)
-    if item and item:HasComponent("seasonswitcherdoodle") then
-        item.components.seasonswitcherdoodle:Transform(inst, giver)
-        return true
-    end
-    return false
-end
-
--- 修改普通蜘蛛
-AddPrefabPostInit("spider", function(inst)
-    if not TheWorld.ismastersim then
-        return
-    end
-    
-    -- 添加季节变化监听
-    inst.OnEntityWake = OnWake
-    inst.OnEntitySleep = OnSleep
-    
-    -- 添加可被喂食的功能
-    if not inst.components.trader then
-        inst:AddComponent("trader")
-        inst.components.trader.acceptnontradable = true
-        inst.components.trader:SetAcceptTest(function(inst, item)
-            return item:HasTag("switcherdoodle")
-        end)
-        inst.components.trader.onaccept = FeedSpider
-    end
-    
-    -- 初始检查
-    -- 如果已经是永久形态，不做任何改变
-    --if inst:HasTag("permanent_form") then
-    --    return
-    --end
-    
-    local current_season = TheWorld.state.season
-    
-    if current_season == "winter" then
-        BecomeFrostSpider(inst)
-    elseif current_season == "spring" then
-        BecomeWetSpider(inst)
-    elseif current_season == "summer" then
-        BecomeHotSpider(inst)
-    end
-    -- 秋天保持普通形态，不需要特殊处理
-end)
-
--- 同样修改其他类型的蜘蛛
-local spider_types = {"spider_warrior", "spider_dropper", "spider_hider", "spider_spitter", "spider_moon", "spider_healer"}
-for _, spider_type in ipairs(spider_types) do
-    AddPrefabPostInit(spider_type, function(inst)
-        if not TheWorld.ismastersim then
-            return
-        end
-        
-        -- 添加季节变化监听
-        inst.OnEntityWake = OnWake
-        inst.OnEntitySleep = OnSleep
-        
-        -- 添加可被喂食的功能
-        if not inst.components.trader then
-            inst:AddComponent("trader")
-            inst.components.trader.acceptnontradable = true
-            inst.components.trader:SetAcceptTest(function(inst, item)
-                return item:HasTag("switcherdoodle")
-            end)
-            inst.components.trader.onaccept = FeedSpider
-        end
-        
-        -- 初始检查
-        -- 如果已经是永久形态，不做任何改变
-        --if inst:HasTag("permanent_form") then
-        --    return
-        --end
-        
-        local current_season = TheWorld.state.season
-        
-        if current_season == "winter" then
-            BecomeFrostSpider(inst)
-        elseif current_season == "spring" then
-            BecomeWetSpider(inst)
-        elseif current_season == "summer" then
-            BecomeHotSpider(inst)
-        end
-        -- 秋天保持普通形态，不需要特殊处理
-    end)
-end
-
--- 修改变身涂鸦的制作配方
-AddRecipe2(
-    "frost_switcherdoodle",
-    {Ingredient("monstermeat", 2), Ingredient("silk", 2), Ingredient("ice", 4)},
-    TECH.SCIENCE_ONE,
-    {
-        atlas = "images/inventoryimages/frost_switcherdoodle.xml",
-        image = "frost_switcherdoodle.tex",
-        builder_tag = "spiderwhisperer", -- 韦伯专属标签
-        nounlock = false, -- 改为false，允许解锁
-        numtogive = 1,
-        sortkey = 1
-    },
-    {"SPIDER", "FOOD"} -- 添加分类标签
-)
-
-AddRecipe2(
-    "wet_switcherdoodle",
-    {Ingredient("monstermeat", 2), Ingredient("silk", 2), Ingredient("waterballoon", 2)},
-    TECH.SCIENCE_ONE,
-    {
-        atlas = "images/inventoryimages/wet_switcherdoodle.xml",
-        image = "wet_switcherdoodle.tex",
-        builder_tag = "spiderwhisperer", -- 韦伯专属标签
-        nounlock = false, -- 改为false，允许解锁
-        numtogive = 1,
-        sortkey = 2
-    },
-    {"SPIDER", "FOOD"} -- 添加分类标签
-)
-
-AddRecipe2(
-    "hot_switcherdoodle",
-    {Ingredient("monstermeat", 2), Ingredient("silk", 2), Ingredient("charcoal", 4)},
-    TECH.SCIENCE_ONE,
-    {
-        atlas = "images/inventoryimages/hot_switcherdoodle.xml",
-        image = "hot_switcherdoodle.tex",
-        builder_tag = "spiderwhisperer", -- 韦伯专属标签
-        nounlock = false, -- 改为false，允许解锁
-        numtogive = 1,
-        sortkey = 3
-    },
-    {"SPIDER", "FOOD"} -- 添加分类标签
-)
-
--- 添加变身涂鸦的解锁条件
-local function UnlockSwitcherdoodles(inst)
-    if inst and inst:HasTag("player") and inst.prefab == "webber" then
-        -- 解锁冰霜变身涂鸦
-        if inst.components.builder and not inst.components.builder:KnowsRecipe("frost_switcherdoodle") then
-            inst.components.builder:UnlockRecipe("frost_switcherdoodle")
-        end
-        
-        -- 解锁潮湿变身涂鸦
-        if inst.components.builder and not inst.components.builder:KnowsRecipe("wet_switcherdoodle") then
-            inst.components.builder:UnlockRecipe("wet_switcherdoodle")
-        end
-        
-        -- 解锁火爆变身涂鸦
-        if inst.components.builder and not inst.components.builder:KnowsRecipe("hot_switcherdoodle") then
-            inst.components.builder:UnlockRecipe("hot_switcherdoodle")
-        end
-    end
-end
-
--- 当韦伯与季节蜘蛛交朋友时解锁对应的变身涂鸦
-local function OnBecameFriends(inst, spider)
-    if inst and inst.prefab == "webber" and spider then
-        if spider:HasTag("frostspider") then
-            if inst.components.builder and not inst.components.builder:KnowsRecipe("frost_switcherdoodle") then
-                inst.components.builder:UnlockRecipe("frost_switcherdoodle")
-                if inst.components.talker then
-                    inst.components.talker:Say("我们可以做冰霜变身涂鸦了！")
-                end
-            end
-        elseif spider:HasTag("wetspider") then
-            if inst.components.builder and not inst.components.builder:KnowsRecipe("wet_switcherdoodle") then
-                inst.components.builder:UnlockRecipe("wet_switcherdoodle")
-                if inst.components.talker then
-                    inst.components.talker:Say("我们可以做潮湿变身涂鸦了！")
-                end
-            end
-        elseif spider:HasTag("hotspider") then
-            if inst.components.builder and not inst.components.builder:KnowsRecipe("hot_switcherdoodle") then
-                inst.components.builder:UnlockRecipe("hot_switcherdoodle")
-                if inst.components.talker then
-                    inst.components.talker:Say("我们可以做火爆变身涂鸦了！")
-                end
-            end
-        end
-    end
-end
-
--- 修改韦伯，添加解锁变身涂鸦的功能
-AddPrefabPostInit("webber", function(inst)
-    if not TheWorld.ismastersim then
-        return
-    end
-    
-    -- 初始解锁所有变身涂鸦（可选，如果想要玩家通过交朋友解锁，可以注释掉这行）
-    inst:DoTaskInTime(0, UnlockSwitcherdoodles)
-    
-    -- 监听交朋友事件
-    if inst.components.spiderfriender then
-        local old_makefriend = inst.components.spiderfriender.MakeFriend
-        inst.components.spiderfriender.MakeFriend = function(self, spider)
-            local result = old_makefriend(self, spider)
-            if result then
-                OnBecameFriends(inst, spider)
-            end
-            return result
-        end
-    end
-end)
-
--- 添加变身涂鸦的功能
+-- 添加喂食蜘蛛变身的功能
 local function OnEatSwitcherdoodle(inst, eater, switcherdoodle_type)
-    if eater and eater:HasTag("spider") and not eater:HasTag("spiderqueen") then
-        -- 移除现有的季节标签
-        eater:RemoveTag("frostspider")
-        eater:RemoveTag("wetspider")
-        eater:RemoveTag("hotspider")
+    if not eater:HasTag("spider") then
+        return
+    end
+    
+    -- 安全地移除现有的季节标签
+    eater:RemoveTag("frostspider")
+    eater:RemoveTag("wetspider")
+    eater:RemoveTag("hotspider")
+    
+    -- 添加永久形态标记，防止季节变化影响
+    eater:AddTag("permanent_form")
+    
+    -- 根据目标类型应用变身效果
+    if switcherdoodle_type == "frost" then
+        -- 变为冰霜蜘蛛
+        eater.AnimState:SetBuild("frostspider")
+        eater:AddTag("frostspider")
         
-        -- 根据涂鸦类型添加新标签并应用效果
-        if switcherdoodle_type == "frost" then
-            -- 如果已经是冰霜蜘蛛，不做任何改变
-            if eater.AnimState:GetBuild() == "frostspider" then
-                return
-            end
-            
-            -- 变为冰霜蜘蛛
-            eater.AnimState:SetBuild("frostspider")
-            eater:AddTag("frostspider")
-            
-            -- 恢复生命值
-            if eater.components.health then
-                eater.components.health:SetMaxHealth(TUNING.FROSTSPIDER_HEALTH)
-                eater.components.health:SetPercent(1)
-            end
-            
-            -- 设置攻击属性
-            if eater.components.combat then
-                eater.components.combat:SetDefaultDamage(TUNING.FROSTSPIDER_DAMAGE)
-                eater.components.combat:SetAttackPeriod(TUNING.FROSTSPIDER_ATTACK_PERIOD)
-                
-                -- 添加冰冻攻击效果
-                eater.components.combat.onhitotherfn = function(inst, target)
-                    if target and target:IsValid() and target.components.health and not target.components.health:IsDead() then
-                        if target.components.freezable then
-                            local freeze_power = TUNING.FROSTSPIDER_FREEZE_POWER
-                            target.components.freezable:AddColdness(freeze_power)
-                        end
-                        if target.components.temperature then
-                            target.components.temperature:DoDelta(-2)  -- 降低目标温度
-                        end
-                    end
+        -- 恢复生命值
+        if eater.components.health then
+            eater.components.health:SetMaxHealth(TUNING.FROSTSPIDER_HEALTH)
+            eater.components.health:SetPercent(1)
+        end
+        
+        -- 更新战斗属性
+        if eater.components.combat then
+            eater.components.combat:SetDefaultDamage(TUNING.FROSTSPIDER_DAMAGE)
+            eater.components.combat:SetAttackPeriod(TUNING.FROSTSPIDER_ATTACK_PERIOD)
+        end
+        
+        -- 添加冰冻效果
+        if eater.components.combat and not eater.components.combat.onhitotherfn_old then
+            eater.components.combat.onhitotherfn_old = eater.components.combat.onhitotherfn
+            eater.components.combat.onhitotherfn = function(inst, other, damage)
+                if other and other.components.freezable then
+                    other.components.freezable:AddColdness(1)
+                    other.components.freezable:SpawnShatterFX()
                 end
-            end
-            
-            -- 添加冰冻抗性
-            if eater.components.freezable then
-                eater.components.freezable:SetResistance(4)
-            end
-            
-            -- 播放变身特效
-            local fx = SpawnPrefab("icespike_fx_1")
-            if fx then
-                fx.Transform:SetPosition(eater.Transform:GetWorldPosition())
-            end
-            
-        elseif switcherdoodle_type == "wet" then
-            -- 如果已经是潮湿蜘蛛，不做任何改变
-            if eater.AnimState:GetBuild() == "wetspider" then
-                return
-            end
-            
-            -- 变为潮湿蜘蛛
-            eater.AnimState:SetBuild("wetspider")
-            eater:AddTag("wetspider")
-            
-            -- 恢复生命值
-            if eater.components.health then
-                eater.components.health:SetMaxHealth(TUNING.WETSPIDER_HEALTH)
-                eater.components.health:SetPercent(1)
-            end
-            
-            -- 设置攻击属性
-            if eater.components.combat then
-                eater.components.combat:SetDefaultDamage(TUNING.WETSPIDER_DAMAGE)
-                eater.components.combat:SetAttackPeriod(TUNING.WETSPIDER_ATTACK_PERIOD)
-                
-                -- 添加潮湿攻击效果
-                eater.components.combat.onhitotherfn = function(inst, target)
-                    if target and target:IsValid() and target.components.health and not target.components.health:IsDead() then
-                        if target.components.moisture then
-                            local wet_power = TUNING.WETSPIDER_WET_POWER
-                            target.components.moisture:DoDelta(wet_power)
-                        end
-                    end
+                if eater.components.combat.onhitotherfn_old then
+                    return eater.components.combat.onhitotherfn_old(inst, other, damage)
                 end
-            end
-            
-            -- 播放变身特效
-            local fx = SpawnPrefab("splash_ocean")
-            if fx then
-                fx.Transform:SetPosition(eater.Transform:GetWorldPosition())
-            end
-            
-        elseif switcherdoodle_type == "hot" then
-            -- 如果已经是火爆蜘蛛，不做任何改变
-            if eater.AnimState:GetBuild() == "hotspider" then
-                return
-            end
-            
-            -- 变为火爆蜘蛛
-            eater.AnimState:SetBuild("hotspider")
-            eater:AddTag("hotspider")
-            
-            -- 恢复生命值
-            if eater.components.health then
-                eater.components.health:SetMaxHealth(TUNING.HOTSPIDER_HEALTH)
-                eater.components.health:SetPercent(1)
-            end
-            
-            -- 设置攻击属性
-            if eater.components.combat then
-                eater.components.combat:SetDefaultDamage(TUNING.HOTSPIDER_DAMAGE)
-                eater.components.combat:SetAttackPeriod(TUNING.HOTSPIDER_ATTACK_PERIOD)
-                
-                -- 添加燃烧攻击效果
-                eater.components.combat.onhitotherfn = function(inst, target)
-                    if target and target:IsValid() and target.components.health and not target.components.health:IsDead() then
-                        if target.components.burnable and not target.components.burnable:IsBurning() then
-                            local burn_power = TUNING.HOTSPIDER_BURN_POWER or 3
-                            if math.random() < 0.3 then  -- 30%几率点燃目标
-                                target.components.burnable:Ignite()
-                            end
-                        end
-                        if target.components.temperature then
-                            target.components.temperature:DoDelta(2)  -- 增加目标温度
-                        end
-                    end
-                end
-            end
-            
-            -- 添加冰冻抗性
-            if eater.components.freezable then
-                eater.components.freezable:SetResistance(8)
-            end
-            
-            -- 播放变身特效
-            local fx = SpawnPrefab("explode_small")
-            if fx then
-                fx.Transform:SetPosition(eater.Transform:GetWorldPosition())
             end
         end
         
-        -- 清除潮湿状态
+        -- 添加死亡效果
+        if eater.components.health and not eater.components.health.ondeath_old then
+            eater.components.health.ondeath_old = eater.components.health.ondeath
+            eater.components.health.ondeath = function(inst, data)
+                local fx = SpawnPrefab("shatter")
+                if fx then
+                    fx.Transform:SetPosition(eater.Transform:GetWorldPosition())
+                end
+                if eater.components.health.ondeath_old then
+                    return eater.components.health.ondeath_old(inst, data)
+                end
+            end
+        end
+        
+        -- 添加冰冻抗性
+        if eater.components.freezable then
+            eater.components.freezable:SetResistance(4)
+        end
+        
+        -- 添加温度调节
+        if eater.components.temperature then
+            eater.components.temperature.mintemp = -20
+            eater.components.temperature.maxtemp = 10
+        end
+        
+        -- 特效
+        local fx = SpawnPrefab("shatter")
+        if fx then
+            fx.Transform:SetPosition(eater.Transform:GetWorldPosition())
+        end
+    elseif switcherdoodle_type == "wet" then
+        -- 变为潮湿蜘蛛
+        eater.AnimState:SetBuild("wetspider")
+        eater:AddTag("wetspider")
+        
+        -- 恢复生命值
+        if eater.components.health then
+            eater.components.health:SetMaxHealth(TUNING.WETSPIDER_HEALTH)
+            eater.components.health:SetPercent(1)
+        end
+        
+        -- 更新战斗属性
+        if eater.components.combat then
+            eater.components.combat:SetDefaultDamage(TUNING.WETSPIDER_DAMAGE)
+            eater.components.combat:SetAttackPeriod(TUNING.WETSPIDER_ATTACK_PERIOD)
+        end
+        
+        -- 添加潮湿效果
+        if eater.components.combat and not eater.components.combat.onhitotherfn_old then
+            eater.components.combat.onhitotherfn_old = eater.components.combat.onhitotherfn
+            eater.components.combat.onhitotherfn = function(inst, other, damage)
+                if other and other.components.moisture then
+                    other.components.moisture:DoDelta(10)
+                end
+                if eater.components.combat.onhitotherfn_old then
+                    return eater.components.combat.onhitotherfn_old(inst, other, damage)
+                end
+            end
+        end
+        
+        -- 添加死亡效果
+        if eater.components.health and not eater.components.health.ondeath_old then
+            eater.components.health.ondeath_old = eater.components.health.ondeath
+            eater.components.health.ondeath = function(inst, data)
+                local fx = SpawnPrefab("splash")
+                if fx then
+                    fx.Transform:SetPosition(eater.Transform:GetWorldPosition())
+                end
+                if eater.components.health.ondeath_old then
+                    return eater.components.health.ondeath_old(inst, data)
+                end
+            end
+        end
+        
+        -- 添加潮湿抗性
         if eater.components.moisture then
-            eater.components.moisture:SetPercent(0)
+            eater.components.moisture.waterproofness = 1
         end
+        
+        -- 特效
+        local fx = SpawnPrefab("splash")
+        if fx then
+            fx.Transform:SetPosition(eater.Transform:GetWorldPosition())
+        end
+    elseif switcherdoodle_type == "hot" then
+        -- 变为火爆蜘蛛
+        eater.AnimState:SetBuild("hotspider")
+        eater:AddTag("hotspider")
+        
+        -- 恢复生命值
+        if eater.components.health then
+            eater.components.health:SetMaxHealth(TUNING.HOTSPIDER_HEALTH)
+            eater.components.health:SetPercent(1)
+        end
+        
+        -- 更新战斗属性
+        if eater.components.combat then
+            eater.components.combat:SetDefaultDamage(TUNING.HOTSPIDER_DAMAGE)
+            eater.components.combat:SetAttackPeriod(TUNING.HOTSPIDER_ATTACK_PERIOD)
+        end
+        
+        -- 添加燃烧效果
+        if eater.components.combat and not eater.components.combat.onhitotherfn_old then
+            eater.components.combat.onhitotherfn_old = eater.components.combat.onhitotherfn
+            eater.components.combat.onhitotherfn = function(inst, other, damage)
+                if other and other.components.burnable and not other.components.burnable:IsBurning() then
+                    other.components.burnable:Ignite()
+                end
+                if eater.components.combat.onhitotherfn_old then
+                    return eater.components.combat.onhitotherfn_old(inst, other, damage)
+                end
+            end
+        end
+        
+        -- 添加死亡效果
+        if eater.components.health and not eater.components.health.ondeath_old then
+            eater.components.health.ondeath_old = eater.components.health.ondeath
+            eater.components.health.ondeath = function(inst, data)
+                local fx = SpawnPrefab("explode_small")
+                if fx then
+                    fx.Transform:SetPosition(eater.Transform:GetWorldPosition())
+                end
+                if eater.components.health.ondeath_old then
+                    return eater.components.health.ondeath_old(inst, data)
+                end
+            end
+        end
+        
+        -- 添加火焰抗性
+        if eater.components.health then
+            eater.components.health.fire_damage_scale = 0
+        end
+        
+        -- 添加温度调节
+        if eater.components.temperature then
+            eater.components.temperature.mintemp = 10
+            eater.components.temperature.maxtemp = 90
+        end
+        
+        -- 特效
+        local fx = SpawnPrefab("explode_small")
+        if fx then
+            fx.Transform:SetPosition(eater.Transform:GetWorldPosition())
+        end
+    end
+    
+    -- 清除潮湿状态
+    if eater.components.moisture then
+        eater.components.moisture:SetPercent(0)
     end
 end
 
