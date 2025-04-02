@@ -15,7 +15,8 @@ description = [[
 
 ]]
 author = "凌"
-version = "2.2"
+version = "2.5"
+api_version = 10
 
 -- 兼容性
 dst_compatible = true
@@ -173,4 +174,4 @@ configuration_options = {
         },
         default = 1.1,
     },
-} 
+}
